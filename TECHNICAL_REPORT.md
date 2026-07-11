@@ -8,6 +8,8 @@
 - Checkpoint SHA-256: `24303cb353b767c6f8c964876beec85cbf868633aa88e3f291cf8004a5e23083`
 - Checkpoint-config SHA-256: `d26c614e9eb27207bd6c9acdc00419e64e998ec32899410e159564af1d9d5038`
 - Frozen submission SHA-256: `f84f1a12568f2556db273fc3b70e7d87b6319e83cf086c7772405e3abd185222`
+- Public model repository: `https://huggingface.co/BertramM/whereisai-lingnan-track1-audio`
+- Public code repository: `https://github.com/Beichen-Hg/WhereIsAI-Lingnan`
 
 The released GitHub code intentionally excludes competition data, cached
 features, model weights, and individual test predictions. The final checkpoint
