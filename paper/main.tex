@@ -108,6 +108,30 @@ teacher calls, test labels, fusion models, fallback models, speech-quality
 feature groups, or test-time optimization. Dependency and submission audits are
 run as part of final inference.
 
+\subsection{Design Rationale and Decision Flow}
+
+The task is treated as a ranking problem rather than a response-generation
+problem. Given a shared conversational situation, the system selects the audio
+candidate whose delivery is most appropriate. Official text provides stable
+conditioning and length metadata only; it is not rewritten, semantically
+replaced by ASR, or scored by an LLM judge.
+
+For each question, the system constructs user/candidate prosody, Emotion2Vec,
+WavLM, task, and text-metadata features. It then creates every unordered pair
+of candidates. The MLP estimates the probability that the left candidate is
+preferred to the right candidate from left, right, signed-difference,
+absolute-difference, and safe-ratio features. Each candidate accumulates its
+pairwise win probabilities, the score is normalized by the number of opponents,
+and the highest mean score is returned. This one mechanism handles both
+two-candidate and three-candidate questions without a separate model or a
+fusion rule.
+
+Emotion2Vec and WavLM have complementary roles. Emotion2Vec contributes
+emotion-oriented audio representations, while WavLM contributes general speech
+representations. Prosody provides interpretable delivery statistics. The final
+MLP learns their user-to-candidate relationships together with the official
+task indicators and provided-text length metadata.
+
 \section{Training Protocol and Parameters}
 
 All official labeled training examples were used for the final refit. Phase 1
@@ -154,18 +178,43 @@ FunASR/torchaudio loading path.
 \section{Reproduction Procedure}
 
 The GitHub repository contains the final-only source code, scripts, tests, and
-runtime dependency specification. The Hugging Face checkpoint should be placed
-under the following project-relative directory:
-
-\begin{verbatim}
-artifacts/final_refit/audio_delivery_pairwise_all_labeled_clean_no_quality_v1/
-\end{verbatim}
-
-With organizer-provided Phase 1 assets and the corresponding final feature
-files available under \texttt{artifacts/}, install dependencies and run:
+runtime dependency specification. Install dependencies and download the public
+Hugging Face checkpoint to the expected project-relative model directory:
 
 \begin{verbatim}
 python -m pip install -r requirements.txt
+cd artifacts/final_refit
+hf download BertramM/whereisai-lingnan-track1-audio \
+  --local-dir audio_delivery_pairwise_all_labeled_clean_no_quality_v1
+cd ../..
+\end{verbatim}
+
+\subsection{Normal Inference}
+
+With organizer-provided Phase 1 assets and the corresponding final feature files
+available under \texttt{artifacts/}, generate predictions with:
+
+\begin{verbatim}
+PYTHON_BIN=python DEVICE=cpu bash scripts/142_infer_phase1_full_audio_delivery.sh
+\end{verbatim}
+
+\subsection{Full Feature Reconstruction}
+
+When starting from organizer-provided raw Phase 1 assets, build the final
+provided-text manifest and feature tables before normal inference:
+
+\begin{verbatim}
+PYTHON_BIN=python bash scripts/140_build_phase1_full_provided_text_manifest.sh
+PYTHON_BIN=python bash scripts/141_build_phase1_full_provided_text_features.sh
+PYTHON_BIN=python DEVICE=cpu bash scripts/142_infer_phase1_full_audio_delivery.sh
+\end{verbatim}
+
+\subsection{Exact Frozen-Submission Check}
+
+When the local frozen audit file is available, the following command also
+compares the output byte-for-byte with the frozen candidate:
+
+\begin{verbatim}
 PYTHON_BIN=python DEVICE=cpu bash scripts/155_reproduce_final_submission.sh
 \end{verbatim}
 
@@ -183,6 +232,11 @@ The available scripts are:
   the generated JSONL byte-for-byte with the frozen candidate when that local
   audit file is available.
 \end{itemize}
+
+% Keep the expected model path explicit for evaluators reading the PDF.
+\begin{verbatim}
+artifacts/final_refit/audio_delivery_pairwise_all_labeled_clean_no_quality_v1/
+\end{verbatim}
 
 \section{Validation and Submission Coverage}
 
