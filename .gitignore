@@ -1,0 +1,13 @@
+# Local environments and generated Python state
+.venvs/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.agents/
+.claude/
+.codex/
+
+# Competition data, feature caches, checkpoints, and generated predictions stay local.
+/data/raw/
+/artifacts/
