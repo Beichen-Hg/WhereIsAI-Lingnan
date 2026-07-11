@@ -5,8 +5,10 @@ reproducibility entry points.
 
 The GitHub repository intentionally excludes competition data, feature caches,
 checkpoint weights, and per-question submission predictions. Download the final
-checkpoint from the linked public Hugging Face model repository before running
-inference. The model URL must be added here before the official submission.
+checkpoint from the public Hugging Face model repository before running
+inference:
+
+https://huggingface.co/BertramM/whereisai-lingnan-track1-audio
 
 ## Final Method
 
