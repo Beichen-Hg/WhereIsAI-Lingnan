@@ -1,5 +1,7 @@
 # Technical Report: Phase 1 Audio Delivery Ranking
 
+The submission-ready PDF version is [TECHNICAL_REPORT.pdf](TECHNICAL_REPORT.pdf).
+
 ## Final System
 
 - System: `provided_text_conditioned_audio_delivery_ranking`

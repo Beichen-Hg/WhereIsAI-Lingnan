@@ -75,6 +75,7 @@ The repository retains these local, generated dependencies for reproducibility:
 These binary assets, feature files, raw data, local environments, test caches,
 and the per-question final submission are ignored by Git. The public code
 release records their hashes in [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md).
+The submission-ready PDF is [TECHNICAL_REPORT.pdf](TECHNICAL_REPORT.pdf).
 
 ## Cleanup
 

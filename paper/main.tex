@@ -1,0 +1,220 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{xurl}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  pdftitle={Technical Report: Provided-Text Conditioned Audio Delivery Ranking},
+  pdfauthor={WhereIsAI-Lingnan}
+}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\hashline}[2]{\shortstack[l]{\texttt{#1}\\\texttt{#2}}}
+\setlist[itemize]{leftmargin=1.4em,itemsep=0.2em,topsep=0.25em}
+\setlength{\parskip}{0.35em}
+\setlength{\parindent}{0pt}
+\sloppy
+
+\title{\textbf{Technical Report: Provided-Text Conditioned\\Audio Delivery Ranking for EmpathyEval Track 1}}
+\author{WhereIsAI-Lingnan}
+\date{Final Release, July 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report documents the final Phase 1 submission system,
+\texttt{provided\_\allowbreak text\_\allowbreak conditioned\_\allowbreak audio\_\allowbreak delivery\_\allowbreak ranking}. The system
+uses a single \texttt{AudioDeliveryPairwiseMLP} trained on all official labeled
+training data. Candidate decisions use prosody, Emotion2Vec, WavLM, task, and
+text-length metadata only. ASR, teacher models, model fusion, fallback rules,
+speech-quality features, and test-time training are excluded. The frozen
+submission covers 530 questions and has been reproduced byte-for-byte from the
+released final checkpoint and retained final feature inputs.
+\end{abstract}
+
+\section{Public Artifacts and Integrity}
+
+The public code repository is
+\url{https://github.com/Beichen-Hg/WhereIsAI-Lingnan}. The public Hugging Face
+model repository is
+\url{https://huggingface.co/BertramM/whereisai-lingnan-track1-audio}. The
+Hugging Face repository contains only the final model release files:
+\texttt{model.pt}, \texttt{config.yaml}, \texttt{feature\_group\_importance.json},
+the model card, and a SHA-256 manifest. Competition data, cached feature files,
+pretrained-model copies, and per-question test predictions are not publicly
+released in those repositories.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\linewidth}{@{}lY@{}}
+\toprule
+Artifact & SHA-256 \\
+\midrule
+Final checkpoint \texttt{model.pt} & \hashline{24303cb353b767c6f8c964876beec}{85cbf868633aa88e3f291cf8004a5e23083} \\
+Checkpoint configuration \texttt{config.yaml} & \hashline{d26c614e9eb27207bd6c9acdc00419e}{64e998ec32899410e159564af1d9d5038} \\
+Frozen submission JSONL & \hashline{f84f1a12568f2556db273fc3b70e7d87}{b6319e83cf086c7772405e3abd185222} \\
+\bottomrule
+\end{tabularx}
+\caption{Final release integrity identifiers.}
+\end{table}
+
+\section{Final Method}
+
+\subsection{Model}
+
+The final learned model is \texttt{AudioDeliveryPairwiseMLP}. For each question,
+the scorer constructs candidate-level representations and converts them into
+pairwise features for ranking the available response audios. The checkpoint
+contains the model state dictionary, the 1,775 feature names, and the fitted
+feature normalization statistics needed by inference.
+
+The exact feature groups are:
+
+\begin{itemize}
+  \item \textbf{Prosody}: basic acoustic delivery statistics extracted by the
+  \texttt{librosa\_basic} backend.
+  \item \textbf{Emotion2Vec}: audio emotion embeddings from
+  \texttt{emotion2vec/emotion2vec\_plus\_large}.
+  \item \textbf{WavLM}: speech embeddings from
+  \texttt{microsoft/wavlm-base-plus}.
+  \item \textbf{Task}: task-type indicators.
+  \item \textbf{Text metadata}: lengths of official JSON-provided context,
+  user, and response text.
+\end{itemize}
+
+Candidate semantic text is taken from the official JSON field
+\texttt{json\_provided}. No ASR transcript is used to override provided text.
+FunASR is only an optional loading backend for the Emotion2Vec emotion model;
+it is not used as an automatic-speech-recognition decision module.
+
+\subsection{Excluded Components}
+
+The final inference path rejects or does not invoke ASR semantic replacement,
+teacher calls, test labels, fusion models, fallback models, speech-quality
+feature groups, or test-time optimization. Dependency and submission audits are
+run as part of final inference.
+
+\section{Training Protocol and Parameters}
+
+All official labeled training examples were used for the final refit. Phase 1
+test examples were used only for blind manifest construction, feature
+extraction, inference, and submission auditing. No Phase 1 test labels are
+loaded by the final inference entry point.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Setting & Final value \\
+\midrule
+Model & \texttt{AudioDeliveryPairwiseMLP} \\
+Feature count & 1,775 \\
+Hidden dimensions & [256, 128] \\
+Dropout & 0.15 \\
+Learning rate & 0.0003 \\
+Weight decay & 0.001 \\
+Batch size & 128 \\
+Epochs & 6 \\
+Random seed & 2026 \\
+Training data & All official labeled training data \\
+\bottomrule
+\end{tabular}
+\caption{Final refit configuration.}
+\end{table}
+
+The all-labeled training metrics are retained as training diagnostics and are
+not claimed as held-out generalization results.
+
+\section{Runtime Environment}
+
+The final release was verified on Linux with Python 3.10.20, PyTorch
+2.9.0+cu128, CUDA 12.8, NumPy 2.2.6, PyYAML 6.0.3, librosa 0.11.0, SoundFile
+0.13.1, Transformers 5.8.1, Hugging Face Hub 1.14.0, FunASR 1.3.1, and
+ModelScope 1.36.3. GPU execution accelerates feature extraction; the final
+scorer also supports \texttt{DEVICE=cpu}. A compatible PyTorch wheel must be
+selected for the target machine. Full audio-feature reconstruction may require
+system audio tooling such as \texttt{ffmpeg}, depending on the selected
+FunASR/torchaudio loading path.
+
+\section{Reproduction Procedure}
+
+The GitHub repository contains the final-only source code, scripts, tests, and
+runtime dependency specification. The Hugging Face checkpoint should be placed
+under the following project-relative directory:
+
+\begin{verbatim}
+artifacts/final_refit/audio_delivery_pairwise_all_labeled_clean_no_quality_v1/
+\end{verbatim}
+
+With organizer-provided Phase 1 assets and the corresponding final feature
+files available under \texttt{artifacts/}, install dependencies and run:
+
+\begin{verbatim}
+python -m pip install -r requirements.txt
+PYTHON_BIN=python DEVICE=cpu bash scripts/155_reproduce_final_submission.sh
+\end{verbatim}
+
+The available scripts are:
+
+\begin{itemize}
+  \item \texttt{140\_build\_phase1\_full\_provided\_text\_manifest.sh}: build the
+  provided-text Phase 1 manifest.
+  \item \texttt{141\_build\_phase1\_full\_provided\_text\_features.sh}: extract
+  final prosody, Emotion2Vec, and WavLM features and build the final feature
+  table.
+  \item \texttt{142\_infer\_phase1\_full\_audio\_delivery.sh}: execute final
+  inference with the released checkpoint.
+  \item \texttt{155\_reproduce\_final\_submission.sh}: run inference and compare
+  the generated JSONL byte-for-byte with the frozen candidate when that local
+  audit file is available.
+\end{itemize}
+
+\section{Validation and Submission Coverage}
+
+The final code tests passed 15/15. Final inference passed both the submission
+format audit and the dependency audit. The frozen submission contains 530 rows:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Source & Questions & Answer distribution \\
+\midrule
+GigaSpeech & 200 & A=119, B=81 \\
+MELD & 210 & A=86, B=62, C=62 \\
+EmoV-DB & 120 & A=64, B=56 \\
+\midrule
+Total & 530 & A=269, B=199, C=62 \\
+\bottomrule
+\end{tabular}
+\caption{Frozen Phase 1 submission coverage.}
+\end{table}
+
+\section{Submission Checklist}
+
+\begin{itemize}
+  \item The Hugging Face model repository is public and ungated.
+  \item The released checkpoint and configuration hashes are recorded above.
+  \item The public GitHub repository contains code, runtime specifications,
+  tests, and this report.
+  \item The competition form should contain the public Hugging Face URL and
+  the captain name required by the organizers.
+\end{itemize}
+
+\end{document}
