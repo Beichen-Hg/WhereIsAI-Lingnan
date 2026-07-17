@@ -86,7 +86,15 @@ class FrozenWavLMExtractor:
         self._device = "cpu"
         self._dtype = "float32"
         self._sampling_rate = 16000
+        self._minimum_input_samples = 1
         self._load_model()
+        self._minimum_input_samples = _minimum_wavlm_input_samples(self._model)
+        self.extractor_config.update(
+            {
+                "minimum_input_samples": self._minimum_input_samples,
+                "short_input_policy": "right_zero_pad_to_receptive_field",
+            }
+        )
 
     def _load_model(self) -> None:
         try:
@@ -144,6 +152,8 @@ class FrozenWavLMExtractor:
                 "embedding_dim": len(user_embedding),
                 "pooling_strategy": self.pooling_strategy,
                 "hidden_layers": self.hidden_layers,
+                "minimum_input_samples": self._minimum_input_samples,
+                "short_input_policy": "right_zero_pad_to_receptive_field",
                 "empty_or_failed": bool(user_meta.get("empty_or_failed", False)),
                 "user_meta": user_meta,
                 "candidate_meta": candidate_meta,
@@ -197,6 +207,11 @@ class FrozenWavLMExtractor:
     def _forward_signal(self, signal: Any, sample_rate: int) -> Any:
         torch = self._torch
         assert torch is not None
+        import numpy as np
+
+        signal = np.asarray(signal, dtype=np.float32)
+        if signal.size < self._minimum_input_samples:
+            signal = np.pad(signal, (0, self._minimum_input_samples - signal.size))
         inputs = self._processor(signal, sampling_rate=sample_rate, return_tensors="pt", padding=True)
         torch_dtype = _torch_dtype(self._dtype, torch)
         inputs = {
@@ -219,6 +234,22 @@ class FrozenWavLMExtractor:
             hidden_layers=self.hidden_layers,
         )
         return pooled.detach().float().cpu().numpy().reshape(-1)
+
+
+def _minimum_wavlm_input_samples(model: Any) -> int:
+    """Return the shortest waveform accepted by the model's conv frontend."""
+
+    config = getattr(model, "config", None)
+    kernels = getattr(config, "conv_kernel", None)
+    strides = getattr(config, "conv_stride", None)
+    if not isinstance(kernels, list | tuple) or not isinstance(strides, list | tuple):
+        return 1
+    if not kernels or len(kernels) != len(strides):
+        return 1
+    required = 1
+    for kernel, stride in reversed(list(zip(kernels, strides, strict=True))):
+        required = (required - 1) * int(stride) + int(kernel)
+    return max(required, 1)
 
 
 class DummyWavLMExtractor:
@@ -358,7 +389,7 @@ def extract_wavlm_rows(
     feature_version: str = "feat-wavlm-chunked",
     progress_every: int = 0,
 ) -> list[dict[str, Any]]:
-    if mode.lower() in {"infer", "test", "phase1_test"}:
+    if mode.lower() in {"infer", "test", "phase1_test", "phase2_test"}:
         assert_no_infer_leakage(manifest_rows)
     rows = []
     total_rows = len(manifest_rows)
@@ -369,13 +400,13 @@ def extract_wavlm_rows(
         rows.append(row)
         if progress_every > 0 and (row_index % progress_every == 0 or row_index == total_rows):
             print(f"[wavlm_extract] {mode}: {row_index}/{total_rows}", file=sys.stderr, flush=True)
-    if mode.lower() in {"infer", "test", "phase1_test"}:
+    if mode.lower() in {"infer", "test", "phase1_test", "phase2_test"}:
         assert_no_infer_leakage(rows)
     return rows
 
 
 def validate_wavlm_rows(rows: Sequence[Mapping[str, Any]], *, mode: str = "train") -> None:
-    if mode.lower() in {"infer", "test", "phase1_test"}:
+    if mode.lower() in {"infer", "test", "phase1_test", "phase2_test"}:
         assert_no_infer_leakage(rows)
     for index, row in enumerate(rows):
         for field in (

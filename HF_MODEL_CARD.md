@@ -7,7 +7,7 @@ tags:
 - emotion-recognition
 ---
 
-# AudioDeliveryPairwiseMLP for Phase 1 EmpathyEval
+# AudioDeliveryPairwiseMLP for EmpathyEval Track 1
 
 This repository distributes the final trained checkpoint for the
 `provided_text_conditioned_audio_delivery_ranking` system.
@@ -35,3 +35,9 @@ test-time training.
 
 See the paired GitHub code repository and `TECHNICAL_REPORT.md` for setup,
 feature construction, exact runtime versions, and reproduction instructions.
+
+## Phase 2 Compatibility
+
+The same frozen checkpoint is used for the Phase 2 blind-test runner. Phase 2
+changes only the official test manifest and blind audio inputs; it does not
+retrain the checkpoint or change the pairwise prediction function.

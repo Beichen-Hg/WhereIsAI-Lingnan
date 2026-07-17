@@ -1,7 +1,7 @@
 # HumOmni 2026 Track 1 EmpathyEval
 
-This repository contains the finalized Phase 1 EmpathyEval system and its
-reproducibility entry points.
+This repository contains the finalized Phase 1 EmpathyEval system and Phase 2
+blind-test inference entry points.
 
 The GitHub repository intentionally excludes competition data, feature caches,
 checkpoint weights, and per-question submission predictions. Download the final
@@ -62,6 +62,34 @@ The standard inference entry point also defaults to this final checkpoint:
 PYTHON_BIN=python DEVICE=cpu scripts/142_infer_phase1_full_audio_delivery.sh
 ```
 
+## Phase 2 Blind-Test Inference
+
+Phase 2 uses the same frozen final checkpoint and the same pairwise prediction
+function as the final Phase 1 submission. It does not retrain, tune, call a
+teacher, use ASR, or use test-time optimization. Only the official Phase 2
+release layout and its blind audio inputs differ.
+
+After downloading and extracting the three official Phase 2 archives below
+`data/raw/empathyeval/`, run the following entry points in order:
+
+```bash
+PYTHON_BIN=python scripts/160_build_phase2_full_provided_text_manifest.sh
+PYTHON_BIN=python scripts/161_build_phase2_full_provided_text_features.sh
+PYTHON_BIN=python DEVICE=auto scripts/162_infer_phase2_full_audio_delivery.sh
+```
+
+The Phase 2 manifest is expected to cover 542 questions: 226 GigaSpeech, 168
+MELD, and 148 EmoV-DB. The runner writes the blinded JSONL result to
+`artifacts/submissions/phase2_test_full_audio_delivery/` and performs both a
+dependency audit and a submission-format audit. These generated results remain
+ignored by Git.
+
+The competition upload format is newline-delimited JSON objects with exactly
+`question_id` and `answer`. Before uploading, keep the JSONL content unchanged
+and name the file `<TEAM_ID>.json` when the organizer's Team-ID naming rule is
+in force. See [PHASE2_SUBMISSION.md](PHASE2_SUBMISSION.md) for the preflight
+checks and release-specific details.
+
 ## Retained Assets
 
 The repository retains these local, generated dependencies for reproducibility:
@@ -101,6 +129,8 @@ PYTHONPATH=src OMP_NUM_THREADS=1 pytest -q \
   tests/test_submission_format.py \
   tests/test_audio_delivery_pairwise.py \
   tests/test_phase1_full_provided_text.py \
+  tests/test_phase2_full_provided_text.py \
+  tests/test_wavlm_short_input.py \
   tests/test_train_guard.py
 ```
 

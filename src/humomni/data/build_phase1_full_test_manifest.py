@@ -33,6 +33,8 @@ class Phase1ReleaseSpec:
     expected_rows: int
     expected_groups: int
     expected_option_count: int
+    question_id_field: str = "question_id"
+    split: str = "phase1_test"
 
 
 DEFAULT_SPECS = (
@@ -185,7 +187,11 @@ def _build_source_rows(spec: Phase1ReleaseSpec) -> tuple[list[dict[str, Any]], d
         if not isinstance(record, Mapping):
             raise ValueError(f"{spec.source_id} release row {index} is not an object")
         _assert_no_forbidden_keys(record, path=f"{spec.source_id}[{index}]")
-        question_id = _required_string(record, "question_id", path=f"{spec.source_id}[{index}]")
+        question_id = _required_string(
+            record,
+            spec.question_id_field,
+            path=f"{spec.source_id}[{index}]",
+        )
         context = str(record.get("context", ""))
         utterance = str(record.get("utterance", "")).strip()
         response = str(record.get("response", "")).strip()
@@ -231,7 +237,7 @@ def _build_source_rows(spec: Phase1ReleaseSpec) -> tuple[list[dict[str, Any]], d
             "provided_response_text": True,
             "semantic_text_source": SEMANTIC_TEXT_SOURCE,
             "use_asr_for_semantic_text": False,
-            "split": "phase1_test",
+            "split": spec.split,
         }
         _assert_no_forbidden_keys(row, path=f"manifest.{question_id}")
         rows.append(row)
@@ -255,6 +261,8 @@ def _build_source_rows(spec: Phase1ReleaseSpec) -> tuple[list[dict[str, Any]], d
         "expected_rows": spec.expected_rows,
         "expected_groups": spec.expected_groups,
         "expected_option_count": spec.expected_option_count,
+        "question_id_field": spec.question_id_field,
+        "split": spec.split,
         "option_count_distribution": dict(Counter(str(len(row["candidate_audio_paths"])) for row in rows)),
         "missing_text_count": len(missing_text),
         "audio_missing_count": len(audio_missing),
@@ -320,6 +328,9 @@ def _resolve_release_audio_path(data_root: Path, raw_path: Any) -> str:
 def _group_id_from_question_id(question_id: str, source_id: str) -> str:
     if source_id == "gigaspeech":
         match = re.match(r"^gigaspeech_(\d+)_\d+$", question_id)
+        if match:
+            return f"gigaspeech_{match.group(1)}"
+        match = re.match(r"^(\d+)_\d+$", question_id)
         if match:
             return f"gigaspeech_{match.group(1)}"
     if source_id == "meld":

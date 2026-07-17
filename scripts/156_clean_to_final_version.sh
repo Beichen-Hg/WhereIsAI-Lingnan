@@ -106,6 +106,7 @@ keep_source_file() {
     src/humomni/__init__.py|\
     src/humomni/data/__init__.py|\
     src/humomni/data/build_phase1_full_test_manifest.py|\
+    src/humomni/data/build_phase2_full_test_manifest.py|\
     src/humomni/eval/__init__.py|\
     src/humomni/features/__init__.py|\
     src/humomni/features/audio_ssl_extract.py|\
@@ -119,6 +120,7 @@ keep_source_file() {
     src/humomni/infer/final_audio_delivery_features.py|\
     src/humomni/infer/make_submission.py|\
     src/humomni/infer/phase1_full_audio_delivery_system.py|\
+    src/humomni/infer/phase2_full_audio_delivery_system.py|\
     src/humomni/models/__init__.py|\
     src/humomni/models/audio_delivery_pairwise.py|\
     src/humomni/utils/hashing.py|\
@@ -134,7 +136,10 @@ keep_script() {
     scripts/141_build_phase1_full_provided_text_features.sh|\
     scripts/142_infer_phase1_full_audio_delivery.sh|\
     scripts/155_reproduce_final_submission.sh|\
-    scripts/156_clean_to_final_version.sh) return 0 ;;
+    scripts/156_clean_to_final_version.sh|\
+    scripts/160_build_phase2_full_provided_text_manifest.sh|\
+    scripts/161_build_phase2_full_provided_text_features.sh|\
+    scripts/162_infer_phase2_full_audio_delivery.sh) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -144,6 +149,8 @@ keep_test() {
     tests/test_submission_format.py|\
     tests/test_audio_delivery_pairwise.py|\
     tests/test_phase1_full_provided_text.py|\
+    tests/test_phase2_full_provided_text.py|\
+    tests/test_wavlm_short_input.py|\
     tests/test_train_guard.py) return 0 ;;
     *) return 1 ;;
   esac

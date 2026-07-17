@@ -37,6 +37,15 @@ Run `scripts/155_reproduce_final_submission.sh` to regenerate a submission into
 Run `scripts/156_clean_to_final_version.sh --apply` to enforce the final-only
 repository scope. It keeps only the final manifest builder, feature extractors,
 provided-text feature table, pairwise inference, submission audit, and their
-four focused tests. It removes all historical model families, experiment scripts,
+focused tests. It removes all historical model families, experiment scripts,
 legacy configuration, generated outputs, duplicate release archives, and local
 dataset caches while preserving required raw audio and the retained final chain.
+
+## Phase 2 Extension
+
+Phase 2 does not introduce a second trained model or a second scoring policy.
+It reuses the final checkpoint above and the Phase 1 prediction function on the
+official Phase 2 blind inputs. The Phase 2 release-specific manifest builder,
+feature extraction entry point, runner, and tests are documented in
+[PHASE2_SUBMISSION.md](PHASE2_SUBMISSION.md). Generated Phase 2 predictions are
+not versioned in Git.

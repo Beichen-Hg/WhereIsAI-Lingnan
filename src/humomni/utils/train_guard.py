@@ -9,14 +9,20 @@ from humomni.utils.io import read_jsonl
 
 
 FORBIDDEN_LEAKAGE_FIELDS = {"gold", "answer", "goodPara", "badPara", "is_gold_candidate"}
-TEST_SPLIT_MARKERS = {"phase1_test", "test", "phase1-test"}
+TEST_SPLIT_MARKERS = {"phase1_test", "phase2_test", "test", "phase1-test", "phase2-test"}
 TEST_PATH_MARKERS = {
     "phase1_test",
+    "phase2_test",
     "phase1-test",
+    "phase2-test",
     "feat-phase1-test",
+    "feat-phase2-test",
     "feat-phase1-provided-text",
+    "feat-phase2-provided-text",
     "feat-phase1-full-provided-text",
+    "feat-phase2-full-provided-text",
     "phase1_full_test",
+    "phase2_full_test",
 }
 SUPERVISED_LABEL_FIELDS = {"label"}
 PHASE1_SPECIALIST_FORBIDDEN_FEATURE_TERMS = {

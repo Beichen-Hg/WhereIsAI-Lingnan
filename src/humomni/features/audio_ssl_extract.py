@@ -492,7 +492,7 @@ def extract_audio_embedding_rows(
     store_metadata: Mapping[str, str] | None = None,
     mode: str = "train",
 ) -> list[dict[str, Any]]:
-    if mode.lower() in {"infer", "test"}:
+    if mode.lower() in {"infer", "test", "phase2_test"}:
         assert_no_infer_leakage(manifest_rows)
     rows: list[dict[str, Any]] = []
     for manifest_row in manifest_rows:
@@ -501,7 +501,7 @@ def extract_audio_embedding_rows(
             feature_row.update(store_metadata)
         feature_row["extractor_name"] = extractor.extractor_name
         rows.append(feature_row)
-    if mode.lower() in {"infer", "test"}:
+    if mode.lower() in {"infer", "test", "phase2_test"}:
         assert_no_infer_leakage(rows)
     return rows
 
@@ -511,7 +511,7 @@ def validate_emotion_embedding_rows(
     *,
     mode: str = "train",
 ) -> None:
-    if mode.lower() in {"infer", "test"}:
+    if mode.lower() in {"infer", "test", "phase2_test"}:
         assert_no_infer_leakage(rows)
     for row_index, row in enumerate(rows):
         for field in (
@@ -846,7 +846,7 @@ def main() -> None:
         extractor_config.update(_extractor_config_from_args(args))
     extractor = _build_extractor(extractor_name, extractor_config)
     manifest_rows = read_jsonl(args.manifest)
-    if args.split in {"infer", "test"}:
+    if args.split in {"infer", "test", "phase2_test"}:
         assert_no_infer_leakage(manifest_rows)
     store = build_feature_store(
         cache_root=cache_root_from_config(config),
